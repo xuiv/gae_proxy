@@ -47,7 +47,7 @@ Usage
 Server setup
 ------------
 
-deploy on gae:
+deploy on gae, login in https://console.cloud.google.com, open Cloud Shell:
 
     go get google.golang.org/appengine
     go get github.com/xuiv/gae_proxy/...
