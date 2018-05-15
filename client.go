@@ -139,7 +139,7 @@ func Connect(server, username, password, remote string) (*ProxyConnection, error
 	defer resp.Body.Close()
 	data := string(data_bytes)
 	if !strings.HasPrefix(data, PrefixData) {
-		msg := fmt.Sprintf("crowbar: Invalid data returned by server: %s", data)
+		msg := fmt.Sprintf("gae_proxy: Invalid data returned by server: %s", data)
 		return &ProxyConnection{}, errors.New(msg)
 	}
 	nonce_b64 := data[len(PrefixData):]
@@ -147,7 +147,7 @@ func Connect(server, username, password, remote string) (*ProxyConnection, error
 	nonce := make([]byte, decodeLen)
 	n, err := base64.StdEncoding.Decode(nonce, []byte(nonce_b64))
 	if err != nil {
-		return &ProxyConnection{}, errors.New("crowbar: Invalid nonce")
+		return &ProxyConnection{}, errors.New("gae_proxy: Invalid nonce")
 	}
 	nonce = nonce[:n]
 
@@ -171,7 +171,7 @@ func Connect(server, username, password, remote string) (*ProxyConnection, error
 	defer resp.Body.Close()
 	data = string(data_bytes)
 	if !strings.HasPrefix(data, PrefixOK) {
-		return &ProxyConnection{}, errors.New("crowbar: Authentication error")
+		return &ProxyConnection{}, errors.New("gae_proxy: Authentication error")
 	}
 	conn.uuid = data[len(PrefixOK):]
 

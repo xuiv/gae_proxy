@@ -70,12 +70,14 @@ func main() {
 			localConn, err := localListen.Accept()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				return
+				// return
+				continue
 			}
 			remoteConn, err := gae_proxy.Connect(*server, *username, *password, *remote)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				return
+				// return
+				continue
 			}
 			go io.Copy(localConn, remoteConn)
 			io.Copy(remoteConn, localConn)
