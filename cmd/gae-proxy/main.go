@@ -26,6 +26,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"flag"
@@ -38,6 +39,7 @@ import (
 	"github.com/pborman/uuid"
 	"github.com/xuiv/gae_proxy"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/socket"
 )
 
 var (
@@ -117,7 +119,9 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	commandChannel := make(chan workerCommand, 10)
 	responseChannel := make(chan workerResponse, 10)
 	fmt.Printf("Connecting to %s:%d...\n", remote_host, remote_port)
-	remote, err := net.Dial("tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
+	//remote, err := net.Dial("tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
+	ctx, _ := context.WithCancel(context.Background())
+	remote, err := socket.Dial(ctx, "tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
 	if err != nil {
 		gae_proxy.WriteHTTPError(w, fmt.Sprintf("Could not connect to %s:%d", remote_host, remote_port))
 		return

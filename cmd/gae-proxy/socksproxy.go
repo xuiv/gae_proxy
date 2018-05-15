@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"google.golang.org/appengine/socket"
 	"io"
 	"net"
 	"strconv"
@@ -74,7 +76,9 @@ func (socks5 *Socks5ProxyHandler) Handle(connect net.Conn) {
 		}
 		lport := strconv.Itoa(int(b[n-2])<<8 | int(b[n-1]))
 
-		server, err := net.Dial("tcp", net.JoinHostPort(host, lport))
+		//server, err := net.Dial("tcp", net.JoinHostPort(host, lport))
+		ctx, _ := context.WithCancel(context.Background())
+		server, err := socket.Dial(ctx, "tcp", net.JoinHostPort(host, lport))
 		if server != nil {
 			defer server.Close()
 		}
