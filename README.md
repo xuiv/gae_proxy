@@ -91,6 +91,7 @@ Building from source
 
 I assume you have a working $GOPATH.
 
+    go get google.golang.org/appengine
     go get github.com/xuiv/gae_proxy/...
 
 gae-client and nogae-proxy will be in $GOPATH/bin.
