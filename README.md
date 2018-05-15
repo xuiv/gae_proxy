@@ -1,16 +1,12 @@
-Crowbar
+gae_proxy (fork from [crowbar](https://github.com/q3k/crowbar))
 =======
-
-When a [corkscrew](http://www.agroman.net/corkscrew/) just isn't enough...
 
 Intro
 -----
 
-![Crowbar overview](http://q3k.org/crowbar-overview.png)
+gae_proxy is an **EXPERIMENTAL** tool that allows you to establish a secure circuit with your existing encrypting TCP endpoints (an OpenVPN setup, an SSH server for forwarding...) when your network connection is limited by a Web proxy that only allows basic port 80 HTTP connectivity.
 
-Crowbar is an **EXPERIMENTAL** tool that allows you to establish a secure circuit with your existing encrypting TCP endpoints (an OpenVPN setup, an SSH server for forwarding...) when your network connection is limited by a Web proxy that only allows basic port 80 HTTP connectivity.
-
-Crowbar will tunnel TCP connections over an HTTP session using only GET and POST requests. This is in contrast to most tunneling systems that reuse the CONNECT verb. It also provides basic authentication to make sure nobody who stumbles upon the server steals your proxy to order drugs from Silkroad.
+gae_proxy will tunnel TCP connections over an HTTP session using only GET and POST requests. This is in contrast to most tunneling systems that reuse the CONNECT verb. It also provides basic authentication to make sure nobody who stumbles upon the server steals your proxy to order drugs from Silkroad.
 
 Features
 --------
@@ -48,68 +44,54 @@ BSD 2-clause, 'nuff said.
 Usage
 =====
 
-Binary releases
----------------
-
-Release and snapshot binaries can be downloaded from [this project's Github Releases page](https://github.com/q3k/crowbar/releases).
-
 Server setup
 ------------
 
 This assumes you're using Linux. If not, you're on your own.
 
-Set up an user for the service
-
-    useradd -rm crowbard
-    mkdir /etc/crowbar/
-    chown crowbar:crowbar /etc/crowbar
-
 Create an authentication file - a new-line delimited file containing username:password pairs.
 
-    touch /etc/crowbar/userfile
-    chown crowbar:crowbar /etc/crowbar/userfile
-    chmod 600 /etc/crowbar/userfile
-    echo -ne "q3k:supersecurepassword\n1337h4xx0r:canttouchthis" >> /etc/crowbar/userfile
-
-Set up an iptables rule to forward traffic from the :80 port to :8080, where the server will be running. Replace eth0 with your public network interface.
-
-    iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j DNAT --to-port 8080
+    echo -ne "user:pass\nuser01:pass01\nuser02:pass02" >> /pathto/nogae_proxy.conf
 
 Run the daemon in screen/tmux or write some unit files for your distribution:
 
-    crowbard -userfile=/etc/crowbard/userfile
+    nogae_proxy -userfile=/pathto/nogae_proxy.conf
 
 Client setup
 ------------
 
 This assumes you're running Linux on your personal computer. If not, you're on your own.
 
-Crowbar will honor the _de-facto_ standard HTTP\_PROXY env var on Linux:
+default gae-client will listen in port:1080 and forward remote socket5 proxy port:1080:
+
+    gae-client -server http://xxxx.appspot.com:80
+
+gae_proxy will honor the _de-facto_ standard HTTP\_PROXY env var on Linux:
 
     export HTTP_PROXY=evil.company.proxy.com:80
 
 For netcat-like functionality:
 
-    crowbar-forward -local=- -username q3k -password secret -server http://your.proxy.server.com:80 -remote towel.blinkenlights.nl:23
+    gae-client -local=- -username user -password pass -server http://your.proxy.server.com:80 -remote towel.blinkenlights.nl:23
 
 For port-forwarding:
 
 
-    crowbar-forward -local=127.0.0.1:1337 -username q3k -password secret -server http://your.proxy.server.com:80 -remote towel.blinkenlights.nl:23 &
+    gae-client -local=127.0.0.1:1337 -username user -password pass -server http://your.proxy.server.com:80 -remote towel.blinkenlights.nl:23 &
     nc 127.0.0.1 1337
 
 
 For SSH ProxyCommand integration, place this in your .ssh/config, and then SSH into your.ssh.host.com as usual:
 
     Host your.ssh.host.com
-        ProxyCommand crowbar-forward -local=- -username q3k -password secret -server http://your.proxy.server.com:80 -remote %h:%p 
+        ProxyCommand gae-client -local=- -username user -password pass -server http://your.proxy.server.com:80 -remote %h:%p 
 
 Building from source
 --------------------
 
 I assume you have a working $GOPATH.
 
-    go get github.com/q3k/crowbar/...
+    go get github.com/xuiv/gae_proxy/...
 
-crowbar-forward and crowbard will be in $GOPATH/bin.
+gae-client and nogae-proxy will be in $GOPATH/bin.
 

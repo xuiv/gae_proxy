@@ -23,37 +23,57 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-package gae_proxy
+package main
 
 import (
-	"encoding/base64"
+	"os"
 	"fmt"
-	"net/http"
+	"bufio"
+	"strings"
+	"crypto/sha256"
+	"crypto/hmac"
 )
 
-const PrefixError string = "ERROR:"
-const PrefixOK string = "OK:"
-const PrefixData string = "DATA:"
-const PrefixQuit string = "QUIT:"
-
-func WriteHTTPError(w http.ResponseWriter, message string) {
-	body := fmt.Sprintf("%s%s", PrefixError, message)
-	http.Error(w, body, http.StatusInternalServerError)
+type localUser struct {
+	username	string
+	password	string
 }
 
-func WriteHTTPOK(w http.ResponseWriter, data string) {
-	fmt.Fprintf(w, "%s%s", PrefixOK, data)
+type User interface {
+	Authenticate(nonce []byte, hmac []byte) bool
 }
 
-func WriteHTTPData(w http.ResponseWriter, data []byte) {
-	data_encoded := base64.StdEncoding.EncodeToString(data)
-	fmt.Fprintf(w, "%s%s", PrefixData, data_encoded)
+func (u localUser) Authenticate(nonce []byte, givenMac []byte) bool {
+	mac := hmac.New(sha256.New, []byte(u.password))
+	mac.Write(nonce)
+	expectedMac := mac.Sum(nil)
+	return hmac.Equal(expectedMac, givenMac)
 }
 
-func WriteHTTPQuit(w http.ResponseWriter, data string) {
-	fmt.Fprintf(w, "%s%s", PrefixQuit, data)
+var userMap = map[string]User{}
+
+func UserGet(username string) (User, bool) {
+	val, ok := userMap[username]
+	return val, ok
 }
 
-const EndpointConnect string = "/connect/"
-const EndpointSync string = "/sync/"
-const EndpointAuth string = "/auth/"
+func loadUsersFromFile(filename string) {
+	file, err := os.Open(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not open user file: %s\n", err)
+		return
+	}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Count(line, ":") != 1 {
+			fmt.Fprintf(os.Stderr, "Invalid userfile line: %s\n", line)
+			continue
+		}
+		parts := strings.Split(line, ":")
+
+		user := localUser{username: parts[0], password: parts[1]}
+		fmt.Fprintf(os.Stderr, "Loaded user %s\n", user.username)
+		userMap[user.username] = user
+	}
+}

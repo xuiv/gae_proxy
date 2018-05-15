@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/q3k/crowbar",
+	"ImportPath": "github.com/xuiv/gae_proxy",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v74",
 	"Packages": [

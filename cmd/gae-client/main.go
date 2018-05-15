@@ -32,15 +32,15 @@ import (
 	"net"
 	"os"
 
-	"github.com/q3k/crowbar"
+	"github.com/xuiv/gae_proxy"
 )
 
 func main() {
-	local := flag.String("local", "127.0.0.1:1122", "Local address to bind to, or - for stdin/out")
-	remote := flag.String("remote", "HOST:PORT", "Remote address to establish tunnel to.")
-	server := flag.String("server", "http://127.0.0.1:8080/", "Crowbar server to use.")
-	username := flag.String("username", "", "Username to use.")
-	password := flag.String("password", "", "Password to use.")
+	local := flag.String("local", "127.0.0.1:1080", "Local address to bind to, or - for stdin/out")
+	remote := flag.String("remote", "127.0.0.1:1080", "Remote address to establish tunnel to.")
+	server := flag.String("server", "http://127.0.0.1:8080/", "gae_proxy server to use.")
+	username := flag.String("username", "user", "Username to use.")
+	password := flag.String("password", "pass", "Password to use.")
 	flag.Parse()
 
 	if *username == "" {
@@ -53,7 +53,7 @@ func main() {
 	}
 
 	if *local == "-" {
-		remoteConn, err := crowbar.Connect(*server, *username, *password, *remote)
+		remoteConn, err := gae_proxy.Connect(*server, *username, *password, *remote)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			return
@@ -72,7 +72,7 @@ func main() {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				return
 			}
-			remoteConn, err := crowbar.Connect(*server, *username, *password, *remote)
+			remoteConn, err := gae_proxy.Connect(*server, *username, *password, *remote)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				return

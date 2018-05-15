@@ -23,9 +23,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-package crowbar
+package gae_proxy
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -33,16 +36,13 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"encoding/base64"
-	"crypto/hmac"
-	"crypto/sha256"
 )
 
 type ProxyConnection struct {
-	uuid		string
-	server		string
-	read_buffer	[]byte
-	read_mutex	sync.Mutex
+	uuid        string
+	server      string
+	read_buffer []byte
+	read_mutex  sync.Mutex
 }
 
 func (c *ProxyConnection) Write(b []byte) (int, error) {
@@ -50,7 +50,7 @@ func (c *ProxyConnection) Write(b []byte) (int, error) {
 	post_args := url.Values{}
 	post_args.Set("data", base64.StdEncoding.EncodeToString(b))
 
-	resp, err := http.PostForm(c.server + EndpointSync + url_args, post_args)
+	resp, err := http.PostForm(c.server+EndpointSync+url_args, post_args)
 	if err != nil {
 		return 0, err
 	}
@@ -86,7 +86,7 @@ func (c *ProxyConnection) FillReadBuffer() error {
 		data := data[len(PrefixData):]
 
 		decodeLen := base64.StdEncoding.DecodedLen(len(data))
-		bData := make([]byte, len(c.read_buffer) + decodeLen)
+		bData := make([]byte, len(c.read_buffer)+decodeLen)
 		n, err := base64.StdEncoding.Decode(bData[len(c.read_buffer):], []byte(data))
 		if err != nil {
 			return err
@@ -111,7 +111,7 @@ func (c *ProxyConnection) Read(b []byte) (n int, err error) {
 	}
 	// Return local buffer
 	count := len(b)
-	if count > len(c.read_buffer){
+	if count > len(c.read_buffer) {
 		count = len(c.read_buffer)
 	}
 	copy(b, c.read_buffer[:count])

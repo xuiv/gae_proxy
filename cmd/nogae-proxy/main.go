@@ -30,6 +30,7 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -37,7 +38,16 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/q3k/crowbar"
+	"github.com/xuiv/gae_proxy"
+)
+
+var (
+	socks_auth = flag.Bool("socksauth", false, "socks5 proxy if use auth")
+	socks_port = flag.String("socksport", "1080", "socks5 proxy port")
+	socks_user = flag.String("socksuser", "user", "socks5 proxy auth user")
+	socks_pass = flag.String("sockspass", "pass", "socks5 proxy auth pass")
+	listen     = flag.String("listen", "0.0.0.0:8080", "Address to bind HTTP server to")
+	userfile   = flag.String("userfile", "nogae_proxy.conf", "Path of user config file")
 )
 
 var nonceMap = map[string][]byte{}
@@ -46,7 +56,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	nonce := make([]byte, 16)
 	_, err := rand.Read(nonce)
 	if err != nil {
-		crowbar.WriteHTTPError(w, "Internal error.")
+		gae_proxy.WriteHTTPError(w, "Internal error.")
 		return
 	}
 
@@ -54,38 +64,38 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	_, ok := UserGet(username)
 
 	if !ok {
-		crowbar.WriteHTTPError(w, "No such user.")
+		gae_proxy.WriteHTTPError(w, "No such user.")
 		return
 	}
 
 	nonceMap[username] = nonce
-	crowbar.WriteHTTPData(w, nonce)
+	gae_proxy.WriteHTTPData(w, nonce)
 }
 
 func connectHandler(w http.ResponseWriter, r *http.Request) {
 	remote_host := r.URL.Query().Get("remote_host")
 	if remote_host == "" {
-		crowbar.WriteHTTPError(w, "Invalid host")
+		gae_proxy.WriteHTTPError(w, "Invalid host")
 		return
 	}
 	remote_port, err := strconv.Atoi(r.URL.Query().Get("remote_port"))
 	if err != nil || remote_port > 0xFFFF {
-		crowbar.WriteHTTPError(w, "Invalid port number.")
+		gae_proxy.WriteHTTPError(w, "Invalid port number.")
 		return
 	}
 	username := r.URL.Query().Get("username")
 	if username == "" {
-		crowbar.WriteHTTPError(w, "Invalid username")
+		gae_proxy.WriteHTTPError(w, "Invalid username")
 		return
 	}
 	user, ok := UserGet(username)
 	if !ok {
-		crowbar.WriteHTTPError(w, "Invalid username")
+		gae_proxy.WriteHTTPError(w, "Invalid username")
 		return
 	}
 	nonce, ok := nonceMap[username]
 	if !ok {
-		crowbar.WriteHTTPError(w, "Invalid username")
+		gae_proxy.WriteHTTPError(w, "Invalid username")
 		return
 	}
 
@@ -94,14 +104,14 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	proof := make([]byte, decodeLen)
 	n, err := base64.StdEncoding.Decode(proof, []byte(proof_b64))
 	if err != nil {
-		crowbar.WriteHTTPError(w, "Invalid nonce")
+		gae_proxy.WriteHTTPError(w, "Invalid nonce")
 		return
 	}
 	proof = proof[:n]
 
 	authenticated := user.Authenticate(nonce, proof)
 	if !authenticated {
-		crowbar.WriteHTTPError(w, "Invalid nonce")
+		gae_proxy.WriteHTTPError(w, "Invalid nonce")
 		return
 	}
 
@@ -111,14 +121,14 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Connecting to %s:%d...\n", remote_host, remote_port)
 	remote, err := net.Dial("tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
 	if err != nil {
-		crowbar.WriteHTTPError(w, fmt.Sprintf("Could not connect to %s:%d", remote_host, remote_port))
+		gae_proxy.WriteHTTPError(w, fmt.Sprintf("Could not connect to %s:%d", remote_host, remote_port))
 		return
 	}
 
 	newWorker := worker{remote: remote, commandChannel: commandChannel, responseChannel: responseChannel, uuid: workerUuid}
 	workerMap[workerUuid] = newWorker
 
-	crowbar.WriteHTTPOK(w, workerUuid)
+	gae_proxy.WriteHTTPOK(w, workerUuid)
 
 	go socketWorker(newWorker)
 }
@@ -134,36 +144,58 @@ func syncHandler(w http.ResponseWriter, r *http.Request) {
 				data := make([]byte, decodeLen)
 				n, err := base64.StdEncoding.Decode(data, []byte(b64))
 				if err != nil {
-					crowbar.WriteHTTPError(w, "Could not decode B64.")
+					gae_proxy.WriteHTTPError(w, "Could not decode B64.")
 				} else {
 					worker.commandChannel <- workerCommand{command: command_data, extra: data[:n]}
-					crowbar.WriteHTTPOK(w, "Sent.")
+					gae_proxy.WriteHTTPOK(w, "Sent.")
 				}
 			} else {
-				crowbar.WriteHTTPError(w, "Data is required.")
+				gae_proxy.WriteHTTPError(w, "Data is required.")
 			}
 		} else {
 			response := <-worker.responseChannel
 			switch response.response {
 			case response_data:
-				crowbar.WriteHTTPData(w, response.extra_byte)
+				gae_proxy.WriteHTTPData(w, response.extra_byte)
 			case response_quit:
-				crowbar.WriteHTTPQuit(w, response.extra_string)
+				gae_proxy.WriteHTTPQuit(w, response.extra_string)
 			}
 		}
 	} else {
-		crowbar.WriteHTTPError(w, "No such UUID")
+		gae_proxy.WriteHTTPError(w, "No such UUID")
 	}
 }
 
+func socks_main() {
+	socket, err := net.Listen("tcp", ":"+*socks_port)
+	if err != nil {
+		return
+	}
+	log.Printf("socks5 proxy server running on port [:%s], listening ...\n", *socks_port)
+
+	for {
+		client, err := socket.Accept()
+
+		if err != nil {
+			return
+		}
+
+		var handler Handler = new(Socks5ProxyHandler)
+
+		go handler.Handle(client)
+
+		log.Println(client, " request handling...")
+	}
+
+}
+
 func main() {
-	var listen = flag.String("listen", "0.0.0.0:8080", "Address to bind HTTP server to")
-	var userfile = flag.String("userfile", "/etc/crowbard.conf", "Path of user config file")
 	flag.Parse()
+	go socks_main()
 	loadUsersFromFile(*userfile)
 	fmt.Fprintf(os.Stderr, "Server starting on %s...\n", *listen)
-	http.HandleFunc(crowbar.EndpointConnect, connectHandler)
-	http.HandleFunc(crowbar.EndpointSync, syncHandler)
-	http.HandleFunc(crowbar.EndpointAuth, authHandler)
+	http.HandleFunc(gae_proxy.EndpointConnect, connectHandler)
+	http.HandleFunc(gae_proxy.EndpointSync, syncHandler)
+	http.HandleFunc(gae_proxy.EndpointAuth, authHandler)
 	http.ListenAndServe(*listen, nil)
 }
