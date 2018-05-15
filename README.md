@@ -47,13 +47,21 @@ Usage
 Server setup
 ------------
 
+deploy on gae:
+
+    go get google.golang.org/appengine
+    go get github.com/xuiv/gae_proxy/...
+    mv $GOPATH/src/github.com/xuiv/gae_proxy/vendor/github.com/pborman $GOPATH/src/github.com/
+    cd $GOPATH/src/github.com/xuiv/gae_proxy/cmd/gae-proxy/
+    gcloud app deploy app.yaml
+
 This assumes you're using Linux. If not, you're on your own.
 
 Create an authentication file - a new-line delimited file containing username:password pairs.
 
     echo -ne "user:pass\nuser01:pass01\nuser02:pass02" >> /pathto/nogae_proxy.conf
 
-Run the daemon in screen/tmux or write some unit files for your distribution:
+Run the daemon in screen/tmux or write some unit files for your distribution and the default listen port:8080
 
     nogae_proxy -userfile=/pathto/nogae_proxy.conf
 
