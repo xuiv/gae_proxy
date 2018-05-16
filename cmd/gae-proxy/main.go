@@ -116,7 +116,7 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	responseChannel := make(chan workerResponse, 10)
 	fmt.Printf("Connecting to %s:%d...\n", remote_host, remote_port)
 	//remote, err := net.Dial("tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
-	ctx, _ := context.WithCancel(context.Background())
+	ctx := appengine.NewContext(r)
 	remote, err := socket.Dial(ctx, "tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
 	if err != nil {
 		gae_proxy.WriteHTTPError(w, fmt.Sprintf("Could not connect to %s:%d", remote_host, remote_port))
