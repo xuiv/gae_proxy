@@ -30,6 +30,7 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
+	// "net"
 	"net/http"
 	"strconv"
 
@@ -40,6 +41,7 @@ import (
 )
 
 var (
+	// listen   = flag.String("listen", "0.0.0.0:8080", "Address to bind HTTP server to")
 	userfile = flag.String("userfile", "gae_proxy.conf", "Path of user config file")
 )
 
@@ -175,5 +177,6 @@ func main() {
 	http.HandleFunc(gae_proxy.EndpointConnect, connectHandler)
 	http.HandleFunc(gae_proxy.EndpointSync, syncHandler)
 	http.HandleFunc(gae_proxy.EndpointAuth, authHandler)
+	// http.ListenAndServe(*listen, nil)
 	appengine.Main()
 }
