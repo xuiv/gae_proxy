@@ -44,6 +44,8 @@ var (
 )
 
 var nonceMap = map[string][]byte{}
+var nonceMapmux sync.Mutex
+var workerMapmux sync.Mutex
 
 func authHandler(w http.ResponseWriter, r *http.Request) {
 	nonce := make([]byte, 16)
@@ -62,7 +64,9 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	nonceMapmux.Lock()
 	nonceMap[fmt.Sprintf("%s:%s", username, connectid)] = nonce
+	nonceMapmux.Unlock()
 	gae_proxy.WriteHTTPData(w, nonce)
 }
 
@@ -123,7 +127,9 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newWorker := worker{remote: remote, commandChannel: commandChannel, responseChannel: responseChannel, uuid: workerUuid}
+	workerMapmux.Lock()
 	workerMap[workerUuid] = newWorker
+	workerMapmux.Unlock()
 
 	gae_proxy.WriteHTTPOK(w, workerUuid)
 
