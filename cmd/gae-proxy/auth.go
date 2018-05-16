@@ -26,17 +26,17 @@
 package main
 
 import (
-	"os"
-	"fmt"
 	"bufio"
-	"strings"
-	"crypto/sha256"
 	"crypto/hmac"
+	"crypto/sha256"
+	"fmt"
+	"os"
+	"strings"
 )
 
 type localUser struct {
-	username	string
-	password	string
+	username string
+	password string
 }
 
 type User interface {

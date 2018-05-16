@@ -31,8 +31,6 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"log"
-	"net"
 	"net/http"
 	"strconv"
 
@@ -43,11 +41,7 @@ import (
 )
 
 var (
-	socks_auth = flag.Bool("socksauth", false, "socks5 proxy if use auth")
-	socks_port = flag.String("socksport", "1080", "socks5 proxy port")
-	socks_user = flag.String("socksuser", "user", "socks5 proxy auth user")
-	socks_pass = flag.String("sockspass", "pass", "socks5 proxy auth pass")
-	userfile   = flag.String("userfile", "gae_proxy.conf", "Path of user config file")
+	userfile = flag.String("userfile", "gae_proxy.conf", "Path of user config file")
 )
 
 var nonceMap = map[string][]byte{}
@@ -61,14 +55,15 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := r.URL.Query().Get("username")
-	_, ok := UserGet(username)
+	connectid := r.URL.Query().Get("connectid")
 
+	_, ok := UserGet(username)
 	if !ok {
 		gae_proxy.WriteHTTPError(w, "No such user.")
 		return
 	}
 
-	nonceMap[username] = nonce
+	nonceMap[fmt.Sprintf("%s:%s", username, connectid)] = nonce
 	gae_proxy.WriteHTTPData(w, nonce)
 }
 
@@ -84,6 +79,7 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	username := r.URL.Query().Get("username")
+	connectid := r.URL.Query().Get("connectid")
 	if username == "" {
 		gae_proxy.WriteHTTPError(w, "Invalid username")
 		return
@@ -93,7 +89,7 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 		gae_proxy.WriteHTTPError(w, "Invalid username")
 		return
 	}
-	nonce, ok := nonceMap[username]
+	nonce, ok := nonceMap[fmt.Sprintf("%s:%s", username, connectid)]
 	if !ok {
 		gae_proxy.WriteHTTPError(w, "Invalid username")
 		return
@@ -168,32 +164,8 @@ func syncHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func socks_main() {
-	socket, err := net.Listen("tcp", ":"+*socks_port)
-	if err != nil {
-		return
-	}
-	log.Printf("socks5 proxy server running on port [:%s], listening ...\n", *socks_port)
-
-	for {
-		client, err := socket.Accept()
-
-		if err != nil {
-			return
-		}
-
-		var handler Handler = new(Socks5ProxyHandler)
-
-		go handler.Handle(client)
-
-		log.Println(client, " request handling...")
-	}
-
-}
-
 func main() {
 	flag.Parse()
-	go socks_main()
 	loadUsersFromFile(*userfile)
 	http.HandleFunc(gae_proxy.EndpointConnect, connectHandler)
 	http.HandleFunc(gae_proxy.EndpointSync, syncHandler)

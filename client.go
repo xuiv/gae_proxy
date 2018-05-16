@@ -39,6 +39,7 @@ import (
 )
 
 type ProxyConnection struct {
+	connectid   string
 	uuid        string
 	server      string
 	read_buffer []byte
@@ -60,7 +61,6 @@ func (c *ProxyConnection) Write(b []byte) (int, error) {
 	}
 	defer resp.Body.Close()
 	data := string(data_bytes)
-
 	if !strings.HasPrefix(data, PrefixOK) {
 		msg := fmt.Sprintf("Could not send to server: %s", data)
 		return 0, errors.New(msg)
@@ -121,13 +121,13 @@ func (c *ProxyConnection) Read(b []byte) (n int, err error) {
 	return count, nil
 }
 
-func Connect(server, username, password, remote string) (*ProxyConnection, error) {
+func Connect(server, username, password, remote, connectid string) (*ProxyConnection, error) {
 	if strings.HasSuffix(server, "/") {
 		server = server[:len(server)-1]
 	}
-	conn := ProxyConnection{server: server}
+	conn := ProxyConnection{server: server, connectid: connectid}
 
-	args := fmt.Sprintf("?username=%s", username)
+	args := fmt.Sprintf("?username=%s&connectid=%s", username, connectid)
 	resp, err := http.Get(conn.server + EndpointAuth + args)
 	if err != nil {
 		return &ProxyConnection{}, err
@@ -138,6 +138,7 @@ func Connect(server, username, password, remote string) (*ProxyConnection, error
 	}
 	defer resp.Body.Close()
 	data := string(data_bytes)
+
 	if !strings.HasPrefix(data, PrefixData) {
 		msg := fmt.Sprintf("gae_proxy: Invalid data returned by server: %s", data)
 		return &ProxyConnection{}, errors.New(msg)
@@ -159,6 +160,7 @@ func Connect(server, username, password, remote string) (*ProxyConnection, error
 	v.Set("remote_host", strings.Split(remote, ":")[0])
 	v.Set("remote_port", strings.Split(remote, ":")[1])
 	v.Set("username", username)
+	v.Set("connectid", connectid)
 	v.Set("proof", base64.StdEncoding.EncodeToString(hmac))
 	resp, err = http.Get(conn.server + EndpointConnect + "?" + v.Encode())
 	if err != nil {

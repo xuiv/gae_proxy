@@ -55,52 +55,12 @@ deploy on gae, login in https://console.cloud.google.com, open Cloud Shell:
     cd $GOPATH/src/github.com/xuiv/gae_proxy/cmd/gae-proxy/
     gcloud app deploy app.yaml
 
-This assumes you're using Linux. If not, you're on your own.
-
-Create an authentication file - a new-line delimited file containing username:password pairs.
-
-    echo -ne "user:pass\nuser01:pass01\nuser02:pass02" >> /pathto/nogae_proxy.conf
-
-Run the daemon in screen/tmux or write some unit files for your distribution and the default listen port:8080
-
-    nogae_proxy -userfile=/pathto/nogae_proxy.conf
 
 Client setup
 ------------
 
 This assumes you're running Linux on your personal computer. If not, you're on your own.
 
-default gae-client will listen in port:1080 and forward remote socket5 proxy port:1080:
+default gae-client will listen in port:1080
 
     gae-client -server http://xxxx.appspot.com:80
-
-gae_proxy will honor the _de-facto_ standard HTTP\_PROXY env var on Linux:
-
-    export HTTP_PROXY=evil.company.proxy.com:80
-
-For netcat-like functionality:
-
-    gae-client -local=- -username user -password pass -server http://your.proxy.server.com:80 -remote towel.blinkenlights.nl:23
-
-For port-forwarding:
-
-
-    gae-client -local=127.0.0.1:1337 -username user -password pass -server http://your.proxy.server.com:80 -remote towel.blinkenlights.nl:23 &
-    nc 127.0.0.1 1337
-
-
-For SSH ProxyCommand integration, place this in your .ssh/config, and then SSH into your.ssh.host.com as usual:
-
-    Host your.ssh.host.com
-        ProxyCommand gae-client -local=- -username user -password pass -server http://your.proxy.server.com:80 -remote %h:%p 
-
-Building from source
---------------------
-
-I assume you have a working $GOPATH.
-
-    go get google.golang.org/appengine
-    go get github.com/xuiv/gae_proxy/...
-
-gae-client and nogae-proxy will be in $GOPATH/bin.
-
