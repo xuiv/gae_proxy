@@ -52,9 +52,7 @@ Server setup
 
 deploy on gae, login in https://console.cloud.google.com, open Cloud Shell:
 
-    go get google.golang.org/appengine
     go get github.com/xuiv/gae_proxy/...
-    mv $GOPATH/src/github.com/xuiv/gae_proxy/vendor/github.com/pborman $GOPATH/src/github.com/
     cd $GOPATH/src/github.com/xuiv/gae_proxy/cmd/gae-proxy/
     gcloud app deploy app.yaml
 

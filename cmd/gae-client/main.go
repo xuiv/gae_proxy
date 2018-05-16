@@ -33,7 +33,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/pborman/uuid"
 	"github.com/xuiv/gae_proxy"
 )
 
@@ -141,7 +140,9 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			continue
 		}
-		connectid := uuid.New()
+		connectid := fmt.Sprint(localConn)
+		connectid = connectid[1:]
+		fmt.Println("connectid:", connectid)
 
 		var handler Handler = new(Socks5ProxyHandler)
 		go handler.Handle(localConn, *server, *username, *password, string(connectid))

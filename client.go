@@ -34,7 +34,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 )
@@ -173,7 +172,7 @@ func Connect(server, username, password, remote, connectid string) (*ProxyConnec
 	}
 	defer resp.Body.Close()
 	data = string(data_bytes)
-	fmt.Fprintf(os.Stdout, "*%s", data)
+	fmt.Println(data)
 	if !strings.HasPrefix(data, PrefixOK) {
 		return &ProxyConnection{}, errors.New("gae_proxy: Authentication error")
 	}
