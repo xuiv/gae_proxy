@@ -1,5 +1,8 @@
 gae_proxy (fork from [crowbar](https://github.com/q3k/crowbar))
 =======
+```
+The Socket API will be enabled for this application once billing has been enabled in the admin console.
+```
 
 Intro
 -----
