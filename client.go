@@ -173,7 +173,7 @@ func Connect(server, username, password, remote, connectid string) (*ProxyConnec
 	}
 	defer resp.Body.Close()
 	data = string(data_bytes)
-	fmt.Fprintf(os.Stdout, "***%s\n", data)
+	fmt.Fprintf(os.Stdout, "*%s", data)
 	if !strings.HasPrefix(data, PrefixOK) {
 		return &ProxyConnection{}, errors.New("gae_proxy: Authentication error")
 	}
