@@ -26,6 +26,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -140,8 +142,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			continue
 		}
+
+		nonce := make([]byte, 16)
+		rand.Read(nonce)
+		nonce_string := hex.EncodeToString(nonce)
 		connectid := fmt.Sprint(localConn)
-		connectid = connectid[1:]
+		connectid = connectid[1:] + nonce_string
 		fmt.Println("connectid:", connectid)
 
 		var handler Handler = new(Socks5ProxyHandler)

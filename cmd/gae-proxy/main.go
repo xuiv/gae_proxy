@@ -128,7 +128,7 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	workerUuid := fmt.Sprint(remote)
-	workerUuid = workerUuid[1:]
+	workerUuid = workerUuid[1:] + connectid
 	fmt.Println("workerUuid:", workerUuid)
 
 	newWorker := worker{remote: remote, commandChannel: commandChannel, responseChannel: responseChannel, uuid: workerUuid}
