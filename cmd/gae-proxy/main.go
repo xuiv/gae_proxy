@@ -98,7 +98,7 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	gaemux.Lock()
 	nonce, ok := nonceMap[fmt.Sprintf("%s:%s", username, connectid)]
-	gaemux.Lock()
+	gaemux.Unlock()
 	if !ok {
 		gae_proxy.WriteHTTPError(w, "Invalid username")
 		return
