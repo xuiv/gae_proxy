@@ -46,8 +46,7 @@ var (
 )
 
 var nonceMap = map[string][]byte{}
-var nonceMapmux sync.Mutex
-var workerMapmux sync.Mutex
+var gaemux sync.Mutex
 
 func authHandler(w http.ResponseWriter, r *http.Request) {
 	nonce := make([]byte, 16)
@@ -60,15 +59,17 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
 	connectid := r.URL.Query().Get("connectid")
 
+	gaemux.Lock()
 	_, ok := UserGet(username)
+	gaemux.Unlock()
 	if !ok {
 		gae_proxy.WriteHTTPError(w, "No such user.")
 		return
 	}
 
-	nonceMapmux.Lock()
+	gaemux.Lock()
 	nonceMap[fmt.Sprintf("%s:%s", username, connectid)] = nonce
-	nonceMapmux.Unlock()
+	gaemux.Unlock()
 	gae_proxy.WriteHTTPData(w, nonce)
 }
 
@@ -132,9 +133,9 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("workerUuid:", workerUuid)
 
 	newWorker := worker{remote: remote, commandChannel: commandChannel, responseChannel: responseChannel, uuid: workerUuid}
-	workerMapmux.Lock()
+	gaemux.Lock()
 	workerMap[workerUuid] = newWorker
-	workerMapmux.Unlock()
+	gaemux.Unlock()
 
 	gae_proxy.WriteHTTPOK(w, workerUuid)
 
@@ -143,9 +144,9 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 
 func syncHandler(w http.ResponseWriter, r *http.Request) {
 	workerUuid := r.URL.Query().Get("uuid")
-	workerMapmux.Lock()
+	gaemux.Lock()
 	worker, ok := workerMap[workerUuid]
-	workerMapmux.Unlock()
+	gaemux.Unlock()
 	if ok {
 		if r.Method == "POST" {
 			r.ParseForm()

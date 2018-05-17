@@ -32,7 +32,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 )
 
 type localUser struct {
@@ -52,12 +51,9 @@ func (u localUser) Authenticate(nonce []byte, givenMac []byte) bool {
 }
 
 var userMap = map[string]User{}
-var userMapmux sync.Mutex
 
 func UserGet(username string) (User, bool) {
-	userMapmux.Lock()
 	val, ok := userMap[username]
-	userMapmux.Unlock()
 	return val, ok
 }
 
