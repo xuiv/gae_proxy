@@ -1,7 +1,8 @@
 gae_proxy (fork from [crowbar](https://github.com/q3k/crowbar))
 =======
 ```
-Google Appengine: The Socket API will be enabled for this application once billing has been enabled in the admin console.
+Google Appengine: 
+The Socket API will be enabled for this application once billing has been enabled in the admin console.
 ```
 
 License
