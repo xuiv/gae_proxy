@@ -30,18 +30,18 @@ import (
 	"encoding/base64"
 	"flag"
 	"fmt"
-	"net"
+	//"net"
 	"net/http"
 	"strconv"
 	"sync"
 
 	"github.com/xuiv/gae_proxy"
-	//"google.golang.org/appengine"
-	//"google.golang.org/appengine/socket"
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/socket"
 )
 
 var (
-	listen   = flag.String("listen", "0.0.0.0:8080", "Address to bind HTTP server to")
+	//listen   = flag.String("listen", "0.0.0.0:8080", "Address to bind HTTP server to")
 	userfile = flag.String("userfile", "gae_proxy.conf", "Path of user config file")
 )
 
@@ -123,9 +123,9 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 	commandChannel := make(chan workerCommand, 10)
 	responseChannel := make(chan workerResponse, 10)
 	fmt.Printf("Connecting to %s:%d...\n", remote_host, remote_port)
-	// ctx := appengine.NewContext(r)
-	// remote, err := socket.Dial(ctx, "tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
-	remote, err := net.Dial("tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
+	ctx := appengine.NewContext(r)
+	remote, err := socket.Dial(ctx, "tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
+	//remote, err := net.Dial("tcp", fmt.Sprintf("%s:%d", remote_host, remote_port))
 	if err != nil {
 		gae_proxy.WriteHTTPError(w, fmt.Sprintf("Could not connect to %s:%d %s", remote_host, remote_port, err.Error()))
 		return
@@ -186,6 +186,6 @@ func main() {
 	http.HandleFunc(gae_proxy.EndpointConnect, connectHandler)
 	http.HandleFunc(gae_proxy.EndpointSync, syncHandler)
 	http.HandleFunc(gae_proxy.EndpointAuth, authHandler)
-	// appengine.Main()
-	http.ListenAndServe(*listen, nil)
+	appengine.Main()
+	//http.ListenAndServe(*listen, nil)
 }
