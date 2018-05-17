@@ -143,7 +143,10 @@ func connectHandler(w http.ResponseWriter, r *http.Request) {
 
 func syncHandler(w http.ResponseWriter, r *http.Request) {
 	workerUuid := r.URL.Query().Get("uuid")
-	if worker, ok := workerMap[workerUuid]; ok {
+	workerMapmux.Lock()
+	worker, ok := workerMap[workerUuid]
+	workerMapmux.Unlock()
+	if ok {
 		if r.Method == "POST" {
 			r.ParseForm()
 			if b64_parts, ok := r.Form["data"]; ok {
